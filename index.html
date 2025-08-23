@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home | Ben Paterson</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- D3 and TopoJSON for the map -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>Ben Paterson</h1>
+        <nav>
+          <a href="index.html">Home</a>
+          <a href="poker.html">Poker</a>
+          <a href="golf.html">Golf</a>
+          <a href="javascript:void(0);" id="resume-link">Resume</a>
+          <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
+          <a href="" id="x-link" target="_blank">X</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <div class="bio-map">
+          <div class="bio">
+            <h2>About Me</h2>
+            <p id="bio-text"></p>
+          </div>
+          <div class="map-container">
+            <svg id="world-map"></svg>
+            <div class="legend">
+              <div><span class="box visited"></span>Visited</div>
+              <div><span class="box not-visited"></span>Not visited</div>
+              <div><span class="dot"></span>Lived in</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="data.js"></script>
+    <script src="map.js"></script>
+    <script>
+      // Populate the bio and social links from data.js
+      document.getElementById('bio-text').innerText = window.bio;
+      // Resume link: if provided, navigate to resume on click
+      const resumeLink = document.getElementById('resume-link');
+      if (window.social && window.social.resumeUrl) {
+        resumeLink.addEventListener('click', () => {
+          window.open(window.social.resumeUrl, '_blank');
+        });
+      }
+      // LinkedIn and X
+      const linkedin = document.getElementById('linkedin-link');
+      const xlink = document.getElementById('x-link');
+      if (window.social) {
+        linkedin.href = window.social.linkedinUrl || '#';
+        xlink.href = window.social.xUrl || '#';
+      }
+    </script>
+  </body>
+</html>
