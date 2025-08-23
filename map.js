@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const visitedIso3 = window.travel.visitedIso3 || [];
+  
   const cities = window.travel.livedCities || [];
   const container = document.getElementById('world-map');
   if (!container) return;
@@ -35,33 +36,57 @@ document.addEventListener('DOMContentLoaded', function () {
     .fitSize([width, height], { type: 'Sphere' });
   const path = d3.geoPath().projection(projection);
 
-  // Load a country GeoJSON that includes ISO_A3 properties.  This
-  // dataset is hosted on GitHub and contains country boundaries with
-  // ISO codes.  If the request fails, the map will not render.
-  fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+  // Build a set of visited ISO3 codes for fast lookup
+  const visitedSet = new Set(visitedIso3.map((c) => String(c).toUpperCase()));
+
+  // Helper to extract an ISO3 code from a country feature
+  function getIso3(f) {
+    const props = f.properties || {};
+    const iso =
+      props.ISO_A3 ||
+      props.iso_a3 ||
+      props.ADM0_A3 ||
+      props.adm0_a3 ||
+      props.brk_a3 ||
+      f.id ||
+      '';
+    return String(iso).toUpperCase();
+  }
+
+  // Fetch country boundaries and draw the map
+  fetch('https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson')
     .then((resp) => resp.json())
     .then((geoData) => {
-      // Draw countries
-      svg
-        .append('g')
+      // Create a group to hold the map so zoom transforms apply to all elements
+      const mapGroup = svg.append('g');
+
+      // Draw country shapes
+      mapGroup
         .selectAll('path')
         .data(geoData.features)
         .join('path')
         .attr('d', path)
         .attr('fill', (d) => {
-          const iso3 = d.properties.ISO_A3;
-          // Some territories may have invalid codes (e.g. '-99')
-          if (!iso3 || iso3.length !== 3 || iso3 === '-99') return '#D1D5DB';
-          return visitedIso3.includes(iso3) ? '#0B2447' : '#D1D5DB';
+          const iso3 = getIso3(d);
+          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#D1D5DB';
+          return visitedSet.has(iso3) ? '#0B2447' : '#D1D5DB';
         })
         .attr('stroke', '#ffffff')
-        .attr('stroke-width', 0.4);
+        .attr('stroke-width', 0.4)
+        .each(function (d) {
+          const iso3 = getIso3(d);
+          if (iso3 && visitedSet.has(iso3)) {
+            // Append a <title> element so the country name appears on hover
+            d3.select(this).append('title').text(d.properties && d.properties.ADMIN);
+          }
+        });
 
-      // Plot lived-in cities
-      svg
+      // Plot lived-in cities as white dots with navy border
+      mapGroup
         .append('g')
         .selectAll('circle')
         .data(cities)
+   
         .join('circle')
         .attr('cx', (d) => projection([d.lon, d.lat])[0])
         .attr('cy', (d) => projection([d.lon, d.lat])[1])
@@ -70,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .attr('stroke', '#0B2447')
         .attr('stroke-width', 1.5);
 
-      // City labels
-      svg
+      // Add labels above each city dot
+      mapGroup
         .append('g')
         .selectAll('text')
         .data(cities)
@@ -83,8 +108,20 @@ document.addEventListener('DOMContentLoaded', function () {
         .attr('font-weight', '600')
         .attr('fill', '#374151')
         .text((d) => d.city);
+
+      // Enable zooming and panning. The scaleExtent restricts how far you can
+      // zoom in or out. During zoom events the transform is applied to mapGroup.
+      svg.call(
+        d3
+          .zoom()
+          .scaleExtent([1, 10])
+          .on('zoom', (event) => {
+            mapGroup.attr('transform', event.transform);
+          })
+      );
     })
     .catch((err) => {
       console.error('Error loading world data:', err);
     });
+  
 });
