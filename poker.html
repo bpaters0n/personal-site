@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Poker | Ben Paterson</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>Ben Paterson</h1>
+        <nav>
+          <a href="index.html">Home</a>
+          <a href="poker.html">Poker</a>
+          <a href="golf.html">Golf</a>
+          <a href="javascript:void(0);" id="resume-link">Resume</a>
+          <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
+          <a href="" id="x-link" target="_blank">X</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <h2>Poker Sessions</h2>
+        <div class="kpi-cards">
+          <div class="kpi-card">
+            <h3>Total Bankroll</h3>
+            <p id="total-bankroll"></p>
+          </div>
+          <div class="kpi-card">
+            <h3>Total Hours</h3>
+            <p id="total-hours"></p>
+          </div>
+          <div class="kpi-card">
+            <h3>Hourly Rate</h3>
+            <p id="hourly-rate"></p>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="sessions-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Stakes</th>
+                <th>Hours</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+    <script src="data.js"></script>
+    <script>
+      // Populate social links
+      const resumeLink = document.getElementById('resume-link');
+      if (window.social && window.social.resumeUrl) {
+        resumeLink.addEventListener('click', () => {
+          window.open(window.social.resumeUrl, '_blank');
+        });
+      }
+      const linkedin = document.getElementById('linkedin-link');
+      const xlink = document.getElementById('x-link');
+      if (window.social) {
+        linkedin.href = window.social.linkedinUrl || '#';
+        xlink.href = window.social.xUrl || '#';
+      }
+
+      // Calculate metrics and build the table
+      const sessions = (window.pokerSessions || []).slice().sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+      });
+      let totalHours = 0;
+      let totalProfit = 0;
+      sessions.forEach((s) => {
+        totalHours += Number(s.hours);
+        totalProfit += Number(s.profit);
+      });
+      const hourly = totalHours > 0 ? totalProfit / totalHours : 0;
+      document.getElementById('total-bankroll').textContent = totalProfit.toFixed(2);
+      document.getElementById('total-hours').textContent = totalHours.toFixed(2);
+      document.getElementById('hourly-rate').textContent = hourly.toFixed(2);
+
+      const tbody = document.querySelector('#sessions-table tbody');
+      sessions.forEach((s) => {
+        const tr = document.createElement('tr');
+        // Profit cell gets a class to colour based on sign
+        const profitClass = s.profit > 0 ? 'profit-positive' : s.profit < 0 ? 'profit-negative' : '';
+        tr.innerHTML = `
+          <td>${s.date}</td>
+          <td>${s.stakes}</td>
+          <td>${s.hours}</td>
+          <td class="${profitClass}">${s.profit}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    </script>
+  </body>
+</html>
