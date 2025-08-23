@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Golf | Ben Paterson</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>Ben Paterson</h1>
+        <nav>
+          <a href="index.html">Home</a>
+          <a href="poker.html">Poker</a>
+          <a href="golf.html">Golf</a>
+          <a href="javascript:void(0);" id="resume-link">Resume</a>
+          <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
+          <a href="" id="x-link" target="_blank">X</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <h2>Golf Courses</h2>
+        <input
+          type="text"
+          id="filter-input"
+          class="filter-input"
+          placeholder="Filter by course, city or country"
+        />
+        <div class="two-columns">
+          <div class="column">
+            <h2>Courses Played</h2>
+            <ul id="played-list" class="course-list"></ul>
+          </div>
+          <div class="column">
+            <h2>Wishlist</h2>
+            <ul id="wishlist-list" class="course-list"></ul>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="data.js"></script>
+    <script>
+      // Populate social links
+      const resumeLink = document.getElementById('resume-link');
+      if (window.social && window.social.resumeUrl) {
+        resumeLink.addEventListener('click', () => {
+          window.open(window.social.resumeUrl, '_blank');
+        });
+      }
+      const linkedin = document.getElementById('linkedin-link');
+      const xlink = document.getElementById('x-link');
+      if (window.social) {
+        linkedin.href = window.social.linkedinUrl || '#';
+        xlink.href = window.social.xUrl || '#';
+      }
+
+      const played = window.golf ? window.golf.played || [] : [];
+      const wishlist = window.golf ? window.golf.wishlist || [] : [];
+
+      const playedList = document.getElementById('played-list');
+      const wishlistList = document.getElementById('wishlist-list');
+      const filterInput = document.getElementById('filter-input');
+
+      function renderLists(filter = '') {
+        // Normalise the filter term
+        const term = filter.trim().toLowerCase();
+
+        // Helper to check if item matches the filter
+        function matches(item) {
+          if (!term) return true;
+          return (
+            item.course.toLowerCase().includes(term) ||
+            item.city.toLowerCase().includes(term) ||
+            item.country.toLowerCase().includes(term)
+          );
+        }
+
+        // Clear existing entries
+        playedList.innerHTML = '';
+        wishlistList.innerHTML = '';
+
+        // Render played courses
+        played
+          .filter(matches)
+          .forEach((item) => {
+            const li = document.createElement('li');
+            li.textContent = `${item.course} — ${item.city}, ${item.country}`;
+            playedList.appendChild(li);
+          });
+
+        // Render wishlist
+        wishlist
+          .filter(matches)
+          .forEach((item) => {
+            const li = document.createElement('li');
+            li.textContent = `${item.course} — ${item.city}, ${item.country}`;
+            wishlistList.appendChild(li);
+          });
+      }
+
+      // Initial render
+      renderLists();
+
+      // Re-render when the user types
+      filterInput.addEventListener('input', (e) => {
+        renderLists(e.target.value);
+      });
+    </script>
+  </body>
+</html>
