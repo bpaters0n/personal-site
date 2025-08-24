@@ -21,7 +21,6 @@
             <a href="music.html">Music</a>
           </div>
           <div class="nav-right">
-            <a href="javascript:void(0);" id="resume-link">Resume</a>
             <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
             <a href="" id="x-link" target="_blank">X</a>
           </div>
@@ -51,13 +50,6 @@
     <script>
       // Populate the bio and social links from data.js
       document.getElementById('bio-text').innerText = window.bio;
-      // Resume link: if provided, navigate to resume on click
-      const resumeLink = document.getElementById('resume-link');
-      if (window.social && window.social.resumeUrl) {
-        resumeLink.addEventListener('click', () => {
-          window.open(window.social.resumeUrl, '_blank');
-        });
-      }
       // LinkedIn and X
       const linkedin = document.getElementById('linkedin-link');
       const xlink = document.getElementById('x-link');

@@ -258,6 +258,84 @@ td.profit-negative {
   padding: 0;
 }
 
+/* Music page styles */
+
+/* Each album is displayed as a card with its cover, info and a hidden tracklist. */
+.album-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+}
+
+.album-cover {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 1rem;
+}
+
+.album-info {
+  flex: 1;
+}
+
+.album-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0B2447;
+}
+
+.album-info p {
+  margin: 2px 0;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+/* The tracklist appears below the album card on hover */
+.tracklist {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 1rem;
+  list-style: none;
+  margin-top: 0.5rem;
+  display: none;
+  z-index: 5;
+}
+
+.album-item:hover .tracklist {
+  display: block;
+}
+
+.tracklist li {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
+.tracklist li:last-child {
+  border-bottom: none;
+}
+
+/* Favourite tracks show a star next to the title */
+.tracklist li.fave::after {
+  content: '★';
+  margin-left: 0.5rem;
+  color: #f59e0b;
+}
+
 .course-list li {
   background-color: #ffffff;
   border: 1px solid #e5e7eb;

@@ -75,11 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
             d.id ||
             ''
           ).toUpperCase();
-          // Render invalid or unknown codes as white (unvisited).  Visited
-          // countries are navy; unvisited are white so they contrast with
-          // the grey map background.
-          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#ffffff';
-          return visitedSet.has(iso3) ? '#0B2447' : '#ffffff';
+          // Render invalid or unknown codes as light grey (unvisited).
+          // Visited countries are navy; unvisited are light grey so they
+          // contrast with the grey map background and allow white city
+          // markers to remain visible.
+          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#D1D5DB';
+          return visitedSet.has(iso3) ? '#0B2447' : '#D1D5DB';
         })
         // Blend country borders into the map background by using the same
         // grey colour (#f3f4f6).  This makes the outlines unobtrusive.
@@ -123,36 +124,30 @@ document.addEventListener('DOMContentLoaded', function () {
         "Prague": [0, -8],
       };
 
-      const citiesGroup = mapGroup.append('g');
-      citiesGroup
-        .selectAll('circle')
+      // Group circles and labels together so they stay aligned when zooming.
+      const cityGroups = mapGroup
+        .append('g')
+        .selectAll('g.city')
         .data(cities)
-        .join('circle')
-        .attr('cx', (d) => projection([d.lon, d.lat])[0])
-        .attr('cy', (d) => projection([d.lon, d.lat])[1])
+        .join('g')
+        .attr('class', 'city-group')
+        .each(function (d) {
+          const [x, y] = projection([d.lon, d.lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          d3.select(this).attr('transform', `translate(${x + offset[0]},${y + offset[1]})`);
+        });
+
+      cityGroups
+        .append('circle')
         .attr('r', baseCircleRadius)
         .attr('fill', '#ffffff')
         .attr('stroke', '#0B2447')
         .attr('stroke-width', 1.5);
 
-      const labelsGroup = mapGroup.append('g');
-      labelsGroup
-        .selectAll('text')
-        .data(cities)
-        .join('text')
+      cityGroups
+        .append('text')
         .attr('class', 'city-label')
-        .attr('x', (d) => {
-          const [lon, lat] = [d.lon, d.lat];
-          const proj = projection([lon, lat]);
-          const offset = labelOffsets[d.city] || [0, 0];
-          return proj[0] + offset[0];
-        })
-        .attr('y', (d) => {
-          const [lon, lat] = [d.lon, d.lat];
-          const proj = projection([lon, lat]);
-          const offset = labelOffsets[d.city] || [0, 0];
-          return proj[1] - 8 + offset[1];
-        })
+        .attr('y', -8)
         .attr('text-anchor', 'middle')
         .attr('font-size', `${baseLabelSize}px`)
         .attr('font-weight', '600')
@@ -170,11 +165,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const { transform } = event;
             mapGroup.attr('transform', transform);
             const k = transform.k;
-            labelsGroup
+            cityGroups
               .selectAll('text.city-label')
               .attr('font-size', `${baseLabelSize / k}px`)
               .attr('stroke-width', baseStrokeWidth / k);
-            citiesGroup
+            cityGroups
               .selectAll('circle')
               .attr('r', baseCircleRadius / k)
               .attr('stroke-width', 1.5 / k);

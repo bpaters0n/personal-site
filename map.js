@@ -100,10 +100,12 @@ document.addEventListener('DOMContentLoaded', function () {
             d.id ||
             ''
           ).toUpperCase();
-          // Countries with invalid ISO codes will be rendered as white,
-          // matching the unvisited style.  Visited countries remain navy.
-          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#ffffff';
-          return visitedSet.has(iso3) ? '#0B2447' : '#ffffff';
+          // Countries with invalid ISO codes will be rendered as light grey,
+          // matching the unvisited style.  Visited countries remain navy and
+          // unvisited countries are grey so they contrast with the grey map
+          // background and white city markers.
+          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#D1D5DB';
+          return visitedSet.has(iso3) ? '#0B2447' : '#D1D5DB';
         })
         // Use the same grey as the container for borders so they blend into
         // the background.  This creates a clean look without distracting
@@ -159,49 +161,38 @@ document.addEventListener('DOMContentLoaded', function () {
         "Prague": [0, -8],
       };
 
-      const citiesGroup = mapGroup.append('g');
-      citiesGroup
-        .selectAll('circle')
+      // Group circles and labels together so they stay aligned when zooming.
+      // Each city group is translated to the projected coordinates plus an
+      // optional offset to avoid overlapping labels.  Inside the group we
+      // draw a circle and a text label at (0,0) and (0, -8) respectively.
+      const cityGroups = mapGroup
+        .append('g')
+        .selectAll('g.city')
         .data(cities)
-        .join('circle')
-        .attr('cx', (d) => projection([d.lon, d.lat])[0])
-        .attr('cy', (d) => projection([d.lon, d.lat])[1])
+        .join('g')
+        .attr('class', 'city-group')
+        .each(function (d) {
+          const [x, y] = projection([d.lon, d.lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          d3.select(this).attr('transform', `translate(${x + offset[0]},${y + offset[1]})`);
+        });
+
+      // Append the city marker (circle)
+      cityGroups
+        .append('circle')
         .attr('r', baseCircleRadius)
         .attr('fill', '#ffffff')
         .attr('stroke', '#0B2447')
         .attr('stroke-width', 1.5);
 
-      // City labels with white outline for contrast.  We assign a class
-      // 'city-label' so we can adjust the font size and stroke width on
-      // zoom.  They are positioned slightly above the corresponding
-      // marker.  The paint-order property ensures that the stroke is
-      // drawn first so that the fill sits on top of the outline.
-      const labelsGroup = mapGroup.append('g');
-      labelsGroup
-        .selectAll('text')
-        .data(cities)
-        .join('text')
+      // Append the city label
+      cityGroups
+        .append('text')
         .attr('class', 'city-label')
-        .attr('x', (d) => {
-          const [lon, lat] = [d.lon, d.lat];
-          const proj = projection([lon, lat]);
-          const offset = labelOffsets[d.city] || [0, 0];
-          return proj[0] + offset[0];
-        })
-        .attr('y', (d) => {
-          const [lon, lat] = [d.lon, d.lat];
-          const proj = projection([lon, lat]);
-          const offset = labelOffsets[d.city] || [0, 0];
-          // base vertical offset of -8 to position above marker, plus any custom offset
-          return proj[1] - 8 + offset[1];
-        })
+        .attr('y', -8)
         .attr('text-anchor', 'middle')
         .attr('font-size', `${baseLabelSize}px`)
         .attr('font-weight', '600')
-        // Use the same navy colour as visited countries for the text fill.  A white
-        // stroke is applied below, and paint-order ensures the stroke sits
-        // behind the fill so the label remains legible on both grey and navy
-        // backgrounds.
         .attr('fill', '#0B2447')
         .attr('stroke', '#ffffff')
         .attr('stroke-width', baseStrokeWidth)
@@ -216,16 +207,14 @@ document.addEventListener('DOMContentLoaded', function () {
           .on('zoom', (event) => {
             const { transform } = event;
             mapGroup.attr('transform', transform);
-            // Adjust label font size and stroke width inversely to zoom level so that
-            // the labels shrink when zooming in (k > 1) and grow when zooming out.
+            // Adjust label font size and stroke width inversely to the zoom level
+            // so that the labels and circles maintain a consistent screen size.
             const k = transform.k;
-            labelsGroup
+            cityGroups
               .selectAll('text.city-label')
               .attr('font-size', `${baseLabelSize / k}px`)
               .attr('stroke-width', baseStrokeWidth / k);
-            // Adjust circle radius and stroke width inversely to zoom so
-            // city markers shrink along with the labels when zooming in.
-            citiesGroup
+            cityGroups
               .selectAll('circle')
               .attr('r', baseCircleRadius / k)
               .attr('stroke-width', 1.5 / k);
