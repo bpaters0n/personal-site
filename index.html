@@ -14,11 +14,17 @@
       <div class="container">
         <h1>Ben Paterson</h1>
         <nav>
-          <a href="index.html">Home</a>
-          <a href="poker.html">Poker</a>
-          <a href="golf.html">Golf</a>
-          <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
-          <a href="" id="x-link" target="_blank">X</a>
+          <div class="nav-left">
+            <a href="index.html">Home</a>
+            <a href="poker.html">Poker</a>
+            <a href="golf.html">Golf</a>
+            <a href="music.html">Music</a>
+          </div>
+          <div class="nav-right">
+            <a href="javascript:void(0);" id="resume-link">Resume</a>
+            <a href="" id="linkedin-link" target="_blank">LinkedIn</a>
+            <a href="" id="x-link" target="_blank">X</a>
+          </div>
         </nav>
       </div>
     </header>
@@ -41,7 +47,7 @@
       </div>
     </main>
     <script src="data.js"></script>
-    <script src="map.js"></script>
+    <script src="map_new.js"></script>
     <script>
       // Populate the bio and social links from data.js
       document.getElementById('bio-text').innerText = window.bio;

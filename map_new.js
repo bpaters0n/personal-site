@@ -1,13 +1,14 @@
 /*
- * World map renderer.
- *
- * Uses D3 and TopoJSON to draw a simplified world map with
- * countries coloured according to whether they appear in the
- * `travel.visitedIso3` list.  Cities you have lived in are plotted
- * as small white dots with labels.  The map automatically scales to
- * the size of its container.
+ * This file mirrors map.js and renders the world map with visited
+ * countries coloured navy and unvisited ones grey.  It also plots
+ * lived-in cities with markers and labels that scale inversely with
+ * zoom.  The map background remains white and an on-hover tooltip
+ * displays the name of visited countries.
  */
 
+// Reuse the implementation from map.js.  This duplication ensures
+// that index.html can reference `map_new.js` without breaking older
+// pages that still import `map.js`.
 document.addEventListener('DOMContentLoaded', function () {
   // Ensure the data variables are available
   if (!window.travel) {
@@ -28,46 +29,22 @@ document.addEventListener('DOMContentLoaded', function () {
     .attr('width', width)
     .attr('height', height);
 
-  // Set an explicit white background on the SVG. Without this, the page
-  // background would show through when zooming or panning. Keeping it
-  // white ensures that all non-visited countries remain grey against a
-  // consistent backdrop.
-  svg.style('background', '#ffffff');
+  // Explicit grey background so unvisited countries (white) stand out on a
+  // consistent backdrop.  This matches the map container colour (#f3f4f6)
+  // defined in the stylesheet.
+  svg.style('background', '#f3f4f6');
 
-  // Define projection and path.  We use fitSize on the sphere for
-  // convenience – this scales the projection to fill the SVG.
   const projection = d3
     .geoMercator()
     .fitSize([width, height], { type: 'Sphere' });
   const path = d3.geoPath().projection(projection);
 
-  /*
-   * Load country boundaries and colour them based on your travel history.
-   *
-   * We fetch a public Natural Earth GeoJSON hosted on CloudFront.  This
-   * endpoint has CORS enabled so it can be requested directly from the
-   * browser.  It contains polygon boundaries for every sovereign
-   * country and includes multiple ISO3 codes under different property
-   * names (`ISO_A3`, `iso_a3`, `ADM0_A3`, `adm0_a3`, `brk_a3`).  To
-   * maximise compatibility, we compute the ISO3 for each feature by
-   * checking these properties in order of preference.  We then
-   * normalise the value to uppercase and compare against a set of
-   * visited country codes.  Countries you have visited are filled
-   * navy (#0B2447); all others are light grey (#D1D5DB).
-   */
   const visitedSet = new Set((visitedIso3 || []).map((c) => String(c).toUpperCase()));
 
-  // Fetch the Natural Earth GeoJSON and draw the map. Countries are coloured
-  // navy if visited, grey otherwise. A custom tooltip appears when hovering
-  // over a visited country. All shapes and labels live inside a single group
-  // so that zoom and pan transformations apply uniformly.
   fetch('https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson')
     .then((resp) => resp.json())
     .then((geoData) => {
-      // Group for all map elements (countries, markers, labels)
       const mapGroup = svg.append('g');
-
-      // Tooltip setup
       container.style.position = 'relative';
       const tooltip = d3
         .select(container)
@@ -82,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .style('font-size', '12px')
         .style('color', '#0B2447');
 
-      // Draw country polygons
       mapGroup
         .selectAll('path')
         .data(geoData.features)
@@ -99,10 +75,15 @@ document.addEventListener('DOMContentLoaded', function () {
             d.id ||
             ''
           ).toUpperCase();
-          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#D1D5DB';
-          return visitedSet.has(iso3) ? '#0B2447' : '#D1D5DB';
+          // Render invalid or unknown codes as white (unvisited).  Visited
+          // countries are navy; unvisited are white so they contrast with
+          // the grey map background.
+          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#ffffff';
+          return visitedSet.has(iso3) ? '#0B2447' : '#ffffff';
         })
-        .attr('stroke', '#ffffff')
+        // Blend country borders into the map background by using the same
+        // grey colour (#f3f4f6).  This makes the outlines unobtrusive.
+        .attr('stroke', '#f3f4f6')
         .attr('stroke-width', 0.4)
         .on('mouseover', function (event, d) {
           const props = d.properties || {};
@@ -120,10 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         })
         .on('mousemove', function (event) {
-          // Use d3.pointer to compute coordinates relative to the container.
-          // This avoids issues where offsetX/offsetY may refer to the SVG
-          // rather than the container.  The pointer function returns an
-          // array [x, y] relative to the given container.
           const [x, y] = d3.pointer(event, container);
           tooltip
             .style('left', x + 10 + 'px')
@@ -133,15 +110,18 @@ document.addEventListener('DOMContentLoaded', function () {
           tooltip.style('display', 'none');
         });
 
-      // Plot lived-in cities
-      // We place both the markers and labels in groups under mapGroup so that
-      // they are transformed together.  A class is assigned to the labels
-      // allowing their size and stroke to be updated on zoom.  The base
-      // values for radius, font size and stroke width are stored so that
-      // they can be scaled inversely to the current zoom level.
       const baseCircleRadius = 4;
       const baseLabelSize = 12;
       const baseStrokeWidth = 3;
+      // Offsets for city labels to prevent overlapping text.  Each entry
+      // contains a [dx, dy] adjustment in pixels to shift the label from
+      // its default position above the city marker.  This prevents
+      // 'Toronto' and 'New York' from colliding when zoomed out.
+      const labelOffsets = {
+        "Toronto": [0, -12],
+        "New York": [0, 6],
+        "Prague": [0, -8],
+      };
 
       const citiesGroup = mapGroup.append('g');
       citiesGroup
@@ -155,33 +135,33 @@ document.addEventListener('DOMContentLoaded', function () {
         .attr('stroke', '#0B2447')
         .attr('stroke-width', 1.5);
 
-      // City labels with white outline for contrast.  We assign a class
-      // 'city-label' so we can adjust the font size and stroke width on
-      // zoom.  They are positioned slightly above the corresponding
-      // marker.  The paint-order property ensures that the stroke is
-      // drawn first so that the fill sits on top of the outline.
       const labelsGroup = mapGroup.append('g');
       labelsGroup
         .selectAll('text')
         .data(cities)
         .join('text')
         .attr('class', 'city-label')
-        .attr('x', (d) => projection([d.lon, d.lat])[0])
-        .attr('y', (d) => projection([d.lon, d.lat])[1] - 8)
+        .attr('x', (d) => {
+          const [lon, lat] = [d.lon, d.lat];
+          const proj = projection([lon, lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          return proj[0] + offset[0];
+        })
+        .attr('y', (d) => {
+          const [lon, lat] = [d.lon, d.lat];
+          const proj = projection([lon, lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          return proj[1] - 8 + offset[1];
+        })
         .attr('text-anchor', 'middle')
         .attr('font-size', `${baseLabelSize}px`)
         .attr('font-weight', '600')
-        // Use the same navy colour as visited countries for the text fill.  A white
-        // stroke is applied below, and paint-order ensures the stroke sits
-        // behind the fill so the label remains legible on both grey and navy
-        // backgrounds.
         .attr('fill', '#0B2447')
         .attr('stroke', '#ffffff')
         .attr('stroke-width', baseStrokeWidth)
         .attr('paint-order', 'stroke fill')
         .text((d) => d.city);
 
-      // Zoom and pan behaviour
       svg.call(
         d3
           .zoom()
@@ -189,18 +169,15 @@ document.addEventListener('DOMContentLoaded', function () {
           .on('zoom', (event) => {
             const { transform } = event;
             mapGroup.attr('transform', transform);
-            // Adjust label font size and stroke width inversely to zoom level so that
-            // the labels shrink when zooming in (k > 1) and grow when zooming out.
             const k = transform.k;
             labelsGroup
               .selectAll('text.city-label')
               .attr('font-size', `${baseLabelSize / k}px`)
               .attr('stroke-width', baseStrokeWidth / k);
-            // Optionally adjust circle radius inversely to zoom to maintain a
-            // consistent appearance.  Uncomment if desired.
-            // citiesGroup
-            //   .selectAll('circle')
-            //   .attr('r', baseCircleRadius / k);
+            citiesGroup
+              .selectAll('circle')
+              .attr('r', baseCircleRadius / k)
+              .attr('stroke-width', 1.5 / k);
           })
       );
     })

@@ -52,6 +52,7 @@ const travel = {
 const pokerSessions = [
   { date: "2025‑08‑01", stakes: "Starting", hours: 0, profit: 300, notes: "Initial bankroll" },
   // Add more sessions here as you play
+  { date: "2025-08-23", stakes: "$0.25/$0.50", hours: 3.5, profit: -200 },
 ];
 
 // Golf courses played and those on your wishlist.  Each course may
@@ -91,6 +92,22 @@ const golf = {
   ],
 };
 
+// Music collection: a list of favourite albums with their artist and
+// personal rating (out of 10).  These entries are displayed on the
+// Music page.  Feel free to customise this list.
+const music = [
+  { album: 'Blonde', artist: 'Frank Ocean', rating: 10 },
+  { album: 'To Pimp a Butterfly', artist: 'Kendrick Lamar', rating: 9.5 },
+  { album: 'My Beautiful Dark Twisted Fantasy', artist: 'Kanye West', rating: 9 },
+  { album: 'OK Computer', artist: 'Radiohead', rating: 9 },
+  { album: 'Channel Orange', artist: 'Frank Ocean', rating: 9 },
+  { album: 'Norman Fucking Rockwell!', artist: 'Lana Del Rey', rating: 8.5 },
+  { album: 'IGOR', artist: 'Tyler, the Creator', rating: 8.5 },
+  { album: 'Purple Rain', artist: 'Prince', rating: 8 },
+  { album: 'In Rainbows', artist: 'Radiohead', rating: 8 },
+  { album: 'Graduation', artist: 'Kanye West', rating: 7.5 },
+];
+
 // Expose the data objects globally.  This allows inline scripts on
 // individual pages to access `bio`, `social`, `travel`, `pokerSessions`
 // and `golf` directly without using modules or bundlers.
@@ -99,3 +116,5 @@ window.social = social;
 window.travel = travel;
 window.pokerSessions = pokerSessions;
 window.golf = golf;
+// Expose the music list globally so it can be accessed on the Music page
+window.music = music;

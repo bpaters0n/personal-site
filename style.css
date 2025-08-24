@@ -37,7 +37,9 @@ header h1 {
 }
 
 nav a {
-  margin-left: 1rem;
+  /* Reset margin by default; spacing will be handled in
+     nav-left and nav-right groups. */
+  margin-left: 0;
   color: #ffffff;
   text-decoration: none;
   font-size: 0.9rem;
@@ -45,6 +47,37 @@ nav a {
 
 nav a:hover {
   text-decoration: underline;
+}
+
+/* Navigation bar layout
+   The nav element contains two groups: .nav-left for the main page links
+   (Home, Poker, Golf, Music) and .nav-right for the resume and social
+   links.  The left group is centred by using flexbox with flex-grow,
+   while the right group naturally aligns to the end of the header. */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+nav .nav-left {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+}
+
+nav .nav-right {
+  display: flex;
+  align-items: center;
+}
+
+nav .nav-left a {
+  margin: 0 0.75rem;
+}
+
+nav .nav-right a {
+  margin-left: 0.75rem;
 }
 
 .container {
@@ -85,6 +118,10 @@ nav a:hover {
   height: 500px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+  /* Use a light grey background for the map container so that
+     unvisited countries (which are coloured white) stand out.
+     Keeping this neutral grey ensures the navy visited countries
+     remain prominent while providing contrast for the white fill. */
   background-color: #f3f4f6;
 }
 

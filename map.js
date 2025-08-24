@@ -28,11 +28,12 @@ document.addEventListener('DOMContentLoaded', function () {
     .attr('width', width)
     .attr('height', height);
 
-  // Set an explicit white background on the SVG. Without this, the page
+  // Set a light grey background on the SVG. Without this, the page
   // background would show through when zooming or panning. Keeping it
-  // white ensures that all non-visited countries remain grey against a
-  // consistent backdrop.
-  svg.style('background', '#ffffff');
+  // grey ensures that unvisited countries (rendered white) stand out
+  // clearly while visited countries remain prominent. This grey matches
+  // the container background (#f3f4f6) used in the stylesheet.
+  svg.style('background', '#f3f4f6');
 
   // Define projection and path.  We use fitSize on the sphere for
   // convenience – this scales the projection to fill the SVG.
@@ -99,10 +100,15 @@ document.addEventListener('DOMContentLoaded', function () {
             d.id ||
             ''
           ).toUpperCase();
-          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#D1D5DB';
-          return visitedSet.has(iso3) ? '#0B2447' : '#D1D5DB';
+          // Countries with invalid ISO codes will be rendered as white,
+          // matching the unvisited style.  Visited countries remain navy.
+          if (!iso3 || iso3 === '-99' || iso3.length !== 3) return '#ffffff';
+          return visitedSet.has(iso3) ? '#0B2447' : '#ffffff';
         })
-        .attr('stroke', '#ffffff')
+        // Use the same grey as the container for borders so they blend into
+        // the background.  This creates a clean look without distracting
+        // outlines around each country.
+        .attr('stroke', '#f3f4f6')
         .attr('stroke-width', 0.4)
         .on('mouseover', function (event, d) {
           const props = d.properties || {};
@@ -143,6 +149,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const baseLabelSize = 12;
       const baseStrokeWidth = 3;
 
+      // Offsets for city labels to avoid overlapping text.  Each entry
+      // provides a [dx, dy] adjustment in pixels applied to the label
+      // position relative to the projected city coordinates.  Positive dy
+      // values push the label downward; negative dy values lift it up.
+      const labelOffsets = {
+        "Toronto": [0, -12],
+        "New York": [0, 6],
+        "Prague": [0, -8],
+      };
+
       const citiesGroup = mapGroup.append('g');
       citiesGroup
         .selectAll('circle')
@@ -166,8 +182,19 @@ document.addEventListener('DOMContentLoaded', function () {
         .data(cities)
         .join('text')
         .attr('class', 'city-label')
-        .attr('x', (d) => projection([d.lon, d.lat])[0])
-        .attr('y', (d) => projection([d.lon, d.lat])[1] - 8)
+        .attr('x', (d) => {
+          const [lon, lat] = [d.lon, d.lat];
+          const proj = projection([lon, lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          return proj[0] + offset[0];
+        })
+        .attr('y', (d) => {
+          const [lon, lat] = [d.lon, d.lat];
+          const proj = projection([lon, lat]);
+          const offset = labelOffsets[d.city] || [0, 0];
+          // base vertical offset of -8 to position above marker, plus any custom offset
+          return proj[1] - 8 + offset[1];
+        })
         .attr('text-anchor', 'middle')
         .attr('font-size', `${baseLabelSize}px`)
         .attr('font-weight', '600')
@@ -196,11 +223,12 @@ document.addEventListener('DOMContentLoaded', function () {
               .selectAll('text.city-label')
               .attr('font-size', `${baseLabelSize / k}px`)
               .attr('stroke-width', baseStrokeWidth / k);
-            // Optionally adjust circle radius inversely to zoom to maintain a
-            // consistent appearance.  Uncomment if desired.
-            // citiesGroup
-            //   .selectAll('circle')
-            //   .attr('r', baseCircleRadius / k);
+            // Adjust circle radius and stroke width inversely to zoom so
+            // city markers shrink along with the labels when zooming in.
+            citiesGroup
+              .selectAll('circle')
+              .attr('r', baseCircleRadius / k)
+              .attr('stroke-width', 1.5 / k);
           })
       );
     })
